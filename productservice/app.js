@@ -1,48 +1,49 @@
+var cors = require('cors');
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
-var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-var monk = require('monk'); // load MongoDB\
-var cors = require('cors'); // enable CORS
 var cookieParser = require('cookie-parser');
 
+// use lab6-db
+var monk = require('monk');
+var db = monk('localhost:27017/assignment2');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
-var products_router = require('./routes/products'); // load router module
+// var indexRouter = require('./routes/index');
+var products_router = require('./routes/products');
 
 var app = express();
+app.use(cors());
+app.use(cookieParser());
 
-var db = monk('localhost:27017/assignment2'); // load database
-var corsOptions = { // specify CORS options
-    "origin": "http://localhost:3000",
-    "credentials": true
-}
-
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
+// // view engine setup
+// app.set('views', path.join(__dirname, 'views'));
+// app.set('view engine', 'pug');
 
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+// app.use(express.static(path.join(__dirname, 'public')));
 
-app.options('*', cors()); // handling pre-flight requests
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
-app.use('/products', products_router); // load router module
 
-// catch 404 and forward to error handler
+// Make our db accessible to routers 
+app.use(function (req, res, next) {
+    req.db = db;
+    next();
+});
+
+app.options('*', cors());
+// app.use('/', indexRouter);
+app.use('/', products_router);
+
+// for requests not matching the above routes, create 404 error and forward to error handler
 app.use(function (req, res, next) {
     next(createError(404));
 });
 
 // error handler
 app.use(function (err, req, res, next) {
-    // set locals, only providing error in development
+    // set locals, only providing error in development environment
     res.locals.message = err.message;
     res.locals.error = req.app.get('env') === 'development' ? err : {};
 
@@ -51,24 +52,9 @@ app.use(function (err, req, res, next) {
     res.render('error');
 });
 
-// make database accessible to router
-app.use(function (req, res, next) {
-    req.db = db;
-    next();
-})
-
-// serving static file /public
-app.use(express.static('./public'));
-
-// enable CORS
-app.use(cors());
-
-// use coolieParser middleware
-app.use(cookieParser());
-
-//module.exports = app;
+// module.exports = app;
 var server = app.listen(3001, function () {
     var host = server.address().address;
     var port = server.address().port;
-    console.log("Server listening at http://%s:%s", host, port);
+    console.log("Assignment 2 server listening at http://%s:%s", host, port);
 })

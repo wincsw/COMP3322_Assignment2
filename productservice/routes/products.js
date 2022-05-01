@@ -10,49 +10,37 @@ router.get('/loadpage', function (req, res) {
     var col = db.get('productCollection');
 
     var product_category = req.query.category;
-    var product_name = req.query.name;
-    var selector = {
-        category: product_category,
-        name: { $regex: '.*' + product_name + '.*', $options: "i" } // contains
-    };
-    col.find(selector).then((err, docs) => {
-        if (err === null) {
-            var product_list = [];
-            var product_count = 0;
-            if (docs.length > 0) {
-                for (let i; i < docs.length; i++) {
-                    var product = {
-                        _id: docs[i]._id,
-                        name: docs[i].name,
-                        price: docs[i].price,
-                        productImage: docs[i].productImage
-                    }
-                    product_list.push(JSON.stringify(product));
-                    product++;
-                }
+    var product_searchstring = req.query.searchstring;
+    var selector;
 
-                var response = {
-                    category: product_category,
-                    productnum: product_count,
-                    products: product_list
-                };
-                res.json(response);
+    if (product_category.length > 0 && product_searchstring.length > 0) {
+        selector = {
+            category: product_category,
+            name: { $regex: '.*' + product_searchstring + '.*', $options: "i" } // contains
+        };
+    }
+    else if (product_category.length > 0) {
+        selector = {
+            category: product_category,
+        };
+    }
+    else if (product_searchstring.length > 0) {
+        selector = {
+            name: { $regex: '.*' + product_searchstring + '.*', $options: "i" } // contains
+        };
+    }
+    else {
+        selector = {};
+    }
 
-            }
-            else {
-                var response = {
-                    category: product_category,
-                    productnum: product_count,
-                    products: product_list
-                };
-                res.json(response);
-            }
-        }
-        else {
-            res.send(err);
-        }
-
+    col.find(selector, { sort: 'name' }).then((docs) => {
+        res.json({
+            products: docs
+        });
+    }).catch((err) => {
+        res.send(err);
     })
+
 })
 
 router.get('/loadproduct/:productid', function (req, res) {
@@ -63,28 +51,25 @@ router.get('/loadproduct/:productid', function (req, res) {
     var selector = {
         _id: product_id,
     };
-    col.find(selector).then((err, docs) => {
-        if (err === null) {
-            if (docs.length > 0) {
-                var response = {
-                    manufacturer: docs[0].manufacturer,
-                    description: docs[0].description,
-                };
+    col.find(selector).then((docs) => {
+        if (docs.length > 0) {
+            var response = {
+                manufacturer: docs[0].manufacturer,
+                description: docs[0].description,
+            };
 
-                res.json(response);
+            res.json(response);
 
-            }
-            else {
-                var response = {
-                    manufacturer: null,
-                    description: null,
-                };
-                res.json(response);
-            }
         }
         else {
-            res.send(err);
+            var response = {
+                manufacturer: null,
+                description: null,
+            };
+            res.json(response);
         }
+    }).catch((err) => {
+        res.send(err);
     })
 })
 
@@ -99,35 +84,72 @@ router.post('/signin', function (req, res) {
         username: username,
         password: password
     };
-    col.find(selector).then((err, docs) => {
-        if (err === null) {
-            if (docs.length > 0) {
-                res.cookie('userId', docs[0]._id, { maxAge: 900000 });
-                var response = {
-                    _id: docs[0]._id,
-                    totalnum: docs[0].totalnum,
-                    message: 'Login sucessful'
-                }
-                res.json(response);
+    col.find(selector).then((docs) => {
+        if (docs.length > 0) {
+            res.cookie('userId', docs[0]._id, { maxAge: 900000 });
+            var response = {
+                _id: docs[0]._id,
+                totalnum: docs[0].totalnum,
+                message: 'Login sucessful'
             }
-            else {
-                var response = {
-                    _id: null,
-                    totalnum: null,
-                    message: 'Login failure'
-                }
-                res.json(response);
-            }
+            res.json(response);
         }
         else {
-            res.send(err);
+            var response = {
+                _id: null,
+                totalnum: null,
+                message: 'Login failure'
+            }
+            res.json(response);
         }
+    }).catch((err) => {
+        res.send(err);
     })
 })
 
 router.get('/signout', function (req, res) {
     res.clearCookie('userID');
     res.send('');
+})
+
+router.get('/getsessioninfo', function (req, res) {
+    var db = req.db;
+    var col = db.get('userCollection');
+
+    var userId = req.cookies.userId;
+    console.log(userId.type)
+
+    if (req.cookies.userId) {
+        col.find({ _id: monk.id(req.cookies.userId) }).then((docs) => {
+            if (docs.length > 0) {
+                var response = {
+                    username: docs[0].username,
+                    totalnum: docs[0].totalnum,
+                    signin: true
+                }
+
+                res.json(response);
+            }
+            else {
+                var response = {
+                    username: '',
+                    totalnum: 0,
+                    signin: false
+                }
+
+                res.json(response);
+            }
+        }).catch((err) => res.send(err))
+    }
+    else {
+        var response = {
+            username: '',
+            totalnum: 0,
+            signin: false
+        }
+
+        req.json(response);
+    }
 })
 
 router.put('/addtocart', function (req, res) {
@@ -143,11 +165,8 @@ router.put('/addtocart', function (req, res) {
         { $inc: { totalnum: quantity, 'cart.$.quantity': quantity } },
         false,
         true
-    ).then((err, result) => {
-        if (err !== null) {
-            res.send(err);
-        }
-    });;
+    ).then((result) => { }).catch((err) => res.send(err))
+
 
     col.update(
         { _id: monk.id(userId), 'cart.productId': { $ne: productId } },
@@ -157,25 +176,26 @@ router.put('/addtocart', function (req, res) {
         },
         false,
         true
-    ).then((err, result) => {
-        if (err !== null) {
-            res.send(err);
-        }
-    });;
+    ).then(result => { }).catch((err) => {
+        res.send(err);
+    })
 
-    col.find({ _id: monk.id(userId) }).then((err, docs) => {
-        if (err === null) {
-            if (docs.length > 0) {
-                var response = {
-                    totalnum: docs[0].totalnum
-                }
-                res.json(response);
+    col.find({ _id: monk.id(userId) }).then((docs) => {
+        if (docs.length > 0) {
+            var response = {
+                totalnum: docs[0].totalnum
             }
-
+            res.json(response);
         }
         else {
-            res.send(err);
+            var response = {
+                totalnum: 0
+            }
+            res.json(response);
         }
+
+    }).catch((err) => {
+        res.send(err);
     })
 })
 
@@ -187,48 +207,47 @@ router.get('/loadcart', function (req, res) {
     var userId = req.cookies.userId;
     var user_selector = { _id: monk.id(userId) };
 
-    col.find(user_selector).then((err, docs) => {
-        if (err === null) {
-            if (docs.length > 0) {
-                var cart = [];
-                for (let i; docs[0].cart.length; i++) {
-                    var name;
-                    var price;
-                    var productImage;
-                    col.find({ _id: monk.id(docs[0].cart[i].productId) }).then((err, result) => {
-                        if (err === null) {
-                            if (result.length > 0) {
-                                name = result[0].name;
-                                price = result[0].price;
-                                productImage = result[0].productImage;
-                            }
-                        }
-                        else {
-                            res.send(err);
-                        }
-                    })
-                    var product = {
-                        productId: docs[0].cart[i].productId,
-                        quantity: docs[0].cart[i].quantity,
-                        name: name,
-                        price: price,
-                        productImage: productImage
+    user_col.find(user_selector).then((docs) => {
+        if (docs.length > 0) {
+            var cart = [];
+            for (let i; docs[0].cart.length; i++) {
+                var name;
+                var price;
+                var productImage;
+                product_col.find({ _id: monk.id(docs[0].cart[i].productId) }).then((esult) => {
+                    if (result.length > 0) {
+                        name = result[0].name;
+                        price = result[0].price;
+                        productImage = result[0].productImage;
                     }
-                    cart.push(JSON.stringify(product));
+                    else {
+                        res.json({
+                            message: err.message,
+                            error: err
+                        });
+                    }
+                })
+                var product = {
+                    productId: docs[0].cart[i].productId,
+                    quantity: docs[0].cart[i].quantity,
+                    name: name,
+                    price: price,
+                    productImage: productImage
                 }
-
-                var response = {
-                    cart: cart
-                }
-                res.json(response);
+                cart.push(JSON.stringify(product));
             }
 
+            var response = {
+                cart: cart
+            }
+            res.json(response);
+        }
 
-        }
-        else {
-            res.send(err);
-        }
+
+    }).catch((err) => {
+        res.send(err);
     })
+
 })
 
 router.put('/updatecart', function (req, res) {
@@ -244,26 +263,24 @@ router.put('/updatecart', function (req, res) {
         { $inc: { totalnum: quantity, 'cart.$.quantity': quantity } },
         false,
         true
-    ).then((err, result) => {
-        if (err !== null) {
-            res.send(err);
-        }
-    });;
+    ).then((result) => { }).catch((err) => res.send(err));
 
-    col.find({ _id: monk.id(userId) }).then((err, docs) => {
-        if (err === null) {
-            if (docs.length > 0) {
-                var response = {
-                    totalnum: docs[0].totalnum
-                }
-                res.json(response);
+    col.find({ _id: monk.id(userId) }).then((docs) => {
+        if (docs.length > 0) {
+            var response = {
+                totalnum: docs[0].totalnum
             }
-
+            res.json(response);
         }
         else {
-            res.send(err);
+            var response = {
+                totalnum: 0
+            }
+            res.json(response);
         }
-    })
+
+    }).catch((err) => res.send(err))
+
 })
 
 router.delete('/deletefromcart/:productid', function (req, res) {
@@ -273,40 +290,40 @@ router.delete('/deletefromcart/:productid', function (req, res) {
     var productId = req.params.productId;
     var userId = req.cookies.userId;
 
-    col.find({ _id: monk.id(userId) }).then((err, docs) => {
-        if (err === null) {
-            if (docs.length > 0) {
-                for (let i; i < docs[0].cart.length; i++) {
-                    if (docs[0].cart[i].productId === productId) {
-                        col.update(
-                            { _id: monk.id(userId) },
-                            {
-                                $pull: { cart: { productId: productId, quantity: docs[0].cart[i].quantity } },
-                                $inc: { totalnum: 0 - quantity }
+    col.find({ _id: monk.id(userId) }).then((docs) => {
+        if (docs.length > 0) {
+            for (let i; i < docs[0].cart.length; i++) {
+                if (docs[0].cart[i].productId === productId) {
+                    col.update(
+                        { _id: monk.id(userId) },
+                        {
+                            $pull: { cart: { productId: productId, quantity: docs[0].cart[i].quantity } },
+                            $inc: { totalnum: 0 - quantity }
 
-                            },
-                            false,
-                            true
-                        ).then((err, result) => {
-                            if (err !== null) {
-                                res.send(err);
-                            }
-                        });
-
-                        var response = {
-                            totalnum: docs[0].totalnum
+                        },
+                        false,
+                        true
+                    ).then((err, result) => {
+                        if (err !== null) {
+                            res.json({
+                                message: err.message,
+                                error: err
+                            });
                         }
+                    });
 
-                        res.json(response);
+                    var response = {
+                        totalnum: docs[0].totalnum
                     }
-                }
 
+                    res.json(response);
+                }
             }
 
         }
-        else {
-            res.send(err);
-        }
+
+    }).catch((err) => {
+        res.send(err);
     })
 })
 
@@ -321,11 +338,9 @@ router.get('/checkout', function (req, res) {
         { $set: { cart: [], totalnum: 0 } },
         false,
         true
-    ).then((err, result) => {
-        if (err !== null) {
-            res.send(err);
-        }
-    });
+    ).then((result) => { }).catch((err) => {
+        res.send(err);
+    })
 
     res.send('');
 })
