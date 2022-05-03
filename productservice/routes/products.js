@@ -1,9 +1,6 @@
 var express = require('express');
 var monk = require('monk');
 var router = express.Router();
-var cookieParser = require('cookie-parser');
-
-router.use(cookieParser());
 
 router.get('/loadpage', function (req, res) {
     var db = req.db;
@@ -80,21 +77,31 @@ router.post('/signin', function (req, res) {
     var username = req.body.username;
     var password = req.body.password;
 
+
+
     var selector = {
         username: username,
         password: password
     };
     col.find(selector).then((docs) => {
+        console.log(username, password)
         if (docs.length > 0) {
-            res.cookie('userId', docs[0]._id, { maxAge: 900000 });
+            console.log('sucess')
+            console.log(docs[0]._id)
+
             var response = {
                 _id: docs[0]._id,
                 totalnum: docs[0].totalnum,
-                message: 'Login sucessful'
+                message: ''
             }
+            res.cookie('userId', docs[0]._id, { maxAge: 86400 * 1000 });
+            console.log(req.cookies['userId'])
+
             res.json(response);
         }
         else {
+            console.log('fail')
+
             var response = {
                 _id: null,
                 totalnum: null,
@@ -108,7 +115,7 @@ router.post('/signin', function (req, res) {
 })
 
 router.get('/signout', function (req, res) {
-    res.clearCookie('userID');
+    res.clearCookie('userId');
     res.send('');
 })
 
@@ -117,10 +124,9 @@ router.get('/getsessioninfo', function (req, res) {
     var col = db.get('userCollection');
 
     var userId = req.cookies.userId;
-    console.log(userId.type)
-
-    if (req.cookies.userId) {
-        col.find({ _id: monk.id(req.cookies.userId) }).then((docs) => {
+    console.log('cookie:', userId)
+    if (userId) {
+        col.find({ _id: monk.id(userId) }).then((docs) => {
             if (docs.length > 0) {
                 var response = {
                     username: docs[0].username,
@@ -148,7 +154,7 @@ router.get('/getsessioninfo', function (req, res) {
             signin: false
         }
 
-        req.json(response);
+        res.json(response);
     }
 })
 
@@ -157,33 +163,36 @@ router.put('/addtocart', function (req, res) {
     var col = db.get('userCollection');
 
     var productId = req.body.productId;
-    var quantity = req.body.quantity;
+    var quantity = parseInt(req.body.quantity);
     var userId = req.cookies.userId;
-
-    col.update(
-        { _id: monk.id(userId), 'cart.productId': productId },
-        { $inc: { totalnum: quantity, 'cart.$.quantity': quantity } },
-        false,
-        true
-    ).then((result) => { }).catch((err) => res.send(err))
-
-
-    col.update(
-        { _id: monk.id(userId), 'cart.productId': { $ne: productId } },
-        {
-            $addToSet: { 'cart': { 'productId': productId, 'quantity': quantity } },
-            $inc: { totalnum: quantity, }
-        },
-        false,
-        true
-    ).then(result => { }).catch((err) => {
-        res.send(err);
-    })
 
     col.find({ _id: monk.id(userId) }).then((docs) => {
         if (docs.length > 0) {
+            console.log(productId, quantity);
+            col.find({ cart: { $elemMatch: { productId: productId } } }).then((result) => {
+                if (result.length > 0) {
+                    col.update(
+                        { _id: monk.id(userId), 'cart.productId': productId },
+                        { $inc: { totalnum: quantity, 'cart.$.quantity': quantity } },
+                        false,
+                        true
+                    )
+                }
+                else {
+                    col.update(
+                        { _id: monk.id(userId), 'cart.productId': { $ne: productId } },
+                        {
+                            $addToSet: { 'cart': { 'productId': productId, 'quantity': quantity } },
+                            $inc: { totalnum: quantity, }
+                        },
+                        false,
+                        true
+                    )
+                }
+
+            })
             var response = {
-                totalnum: docs[0].totalnum
+                totalnum: docs[0].totalnum + quantity
             }
             res.json(response);
         }
@@ -210,37 +219,36 @@ router.get('/loadcart', function (req, res) {
     user_col.find(user_selector).then((docs) => {
         if (docs.length > 0) {
             var cart = [];
-            for (let i; docs[0].cart.length; i++) {
-                var name;
-                var price;
-                var productImage;
-                product_col.find({ _id: monk.id(docs[0].cart[i].productId) }).then((esult) => {
+            for (let i = 0; i < docs[0].cart.length; i++) {
+                var name = '';
+                var price = 0;
+                var productImage = '';
+                product_col.find({ _id: monk.id(docs[0].cart[i].productId) }).then((result) => {
                     if (result.length > 0) {
                         name = result[0].name;
                         price = result[0].price;
                         productImage = result[0].productImage;
-                    }
-                    else {
-                        res.json({
-                            message: err.message,
-                            error: err
-                        });
+                        var product = {
+                            productId: docs[0].cart[i].productId,
+                            quantity: docs[0].cart[i].quantity,
+                            name: name,
+                            price: price,
+                            productImage: productImage
+                        }
+                        cart.push(product);
+                        console.log(docs[0].cart.length)
+                        if (i >= docs[0].cart.length - 1) {
+                            var response = {
+                                cart: cart
+                            }
+                            res.json(response);
+                        }
+
                     }
                 })
-                var product = {
-                    productId: docs[0].cart[i].productId,
-                    quantity: docs[0].cart[i].quantity,
-                    name: name,
-                    price: price,
-                    productImage: productImage
-                }
-                cart.push(JSON.stringify(product));
+
             }
 
-            var response = {
-                cart: cart
-            }
-            res.json(response);
         }
 
 
@@ -255,20 +263,26 @@ router.put('/updatecart', function (req, res) {
     var col = db.get('userCollection');
 
     var productId = req.body.productId;
-    var quantity = req.body.quantity;
+    var quantity = parseInt(req.body.quantity);
     var userId = req.cookies.userId;
 
-    col.update(
-        { _id: monk.id(userId), 'cart.productId': productId },
-        { $inc: { totalnum: quantity, 'cart.$.quantity': quantity } },
-        false,
-        true
-    ).then((result) => { }).catch((err) => res.send(err));
+    // col.update(
+    //     { _id: monk.id(userId), 'cart.productId': productId },
+    //     { $inc: { totalnum: quantity, 'cart.$.quantity': quantity } },
+    //     false,
+    //     true
+    // );
 
     col.find({ _id: monk.id(userId) }).then((docs) => {
         if (docs.length > 0) {
+            col.update(
+                { _id: monk.id(userId), 'cart.productId': productId },
+                { $inc: { totalnum: quantity, 'cart.$.quantity': quantity } },
+                false,
+                true
+            )
             var response = {
-                totalnum: docs[0].totalnum
+                totalnum: docs[0].totalnum + quantity
             }
             res.json(response);
         }

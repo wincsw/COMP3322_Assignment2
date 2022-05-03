@@ -12,8 +12,14 @@ var db = monk('localhost:27017/assignment2');
 // var indexRouter = require('./routes/index');
 var products_router = require('./routes/products');
 
+var corsOptions = {
+    "origin": "http://localhost:3000",
+    "credentials": true
+}
+
+
 var app = express();
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(cookieParser());
 
 // // view engine setup
@@ -32,7 +38,7 @@ app.use(function (req, res, next) {
     next();
 });
 
-app.options('*', cors());
+app.options('*', cors(corsOptions));
 // app.use('/', indexRouter);
 app.use('/', products_router);
 
