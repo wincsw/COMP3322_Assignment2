@@ -1,5 +1,5 @@
 var express = require('express');
-var monk = require('monk');
+var monk = require('monk'); // for convert id to monk.id
 var router = express.Router();
 
 router.get('/loadpage', function (req, res) {
@@ -10,22 +10,26 @@ router.get('/loadpage', function (req, res) {
     var product_searchstring = req.query.searchstring;
     var selector;
 
+    // category and search string
     if (product_category.length > 0 && product_searchstring.length > 0) {
         selector = {
             category: product_category,
             name: { $regex: '.*' + product_searchstring + '.*', $options: "i" } // contains
         };
     }
+    // only category
     else if (product_category.length > 0) {
         selector = {
             category: product_category,
         };
     }
+    // only search string
     else if (product_searchstring.length > 0) {
         selector = {
             name: { $regex: '.*' + product_searchstring + '.*', $options: "i" } // contains
         };
     }
+    // when all category and empty search string
     else {
         selector = {};
     }
@@ -59,6 +63,7 @@ router.get('/loadproduct/:productid', function (req, res) {
 
         }
         else {
+            // send null if not found
             var response = {
                 manufacturer: null,
                 description: null,
@@ -77,31 +82,26 @@ router.post('/signin', function (req, res) {
     var username = req.body.username;
     var password = req.body.password;
 
-
-
     var selector = {
         username: username,
         password: password
     };
+
     col.find(selector).then((docs) => {
-        console.log(username, password)
         if (docs.length > 0) {
-            console.log('sucess')
-            console.log(docs[0]._id)
 
             var response = {
                 _id: docs[0]._id,
                 totalnum: docs[0].totalnum,
-                message: ''
+                message: '' // empty string
             }
+            // set cookie
             res.cookie('userId', docs[0]._id, { maxAge: 86400 * 1000 });
-            console.log(req.cookies['userId'])
 
             res.json(response);
         }
         else {
-            console.log('fail')
-
+            // send null for _id & totalnum if not find
             var response = {
                 _id: null,
                 totalnum: null,
@@ -124,7 +124,6 @@ router.get('/getsessioninfo', function (req, res) {
     var col = db.get('userCollection');
 
     var userId = req.cookies.userId;
-    console.log('cookie:', userId)
     if (userId) {
         col.find({ _id: monk.id(userId) }).then((docs) => {
             if (docs.length > 0) {
@@ -168,7 +167,6 @@ router.put('/addtocart', function (req, res) {
 
     col.find({ _id: monk.id(userId) }).then((docs) => {
         if (docs.length > 0) {
-            console.log(productId, quantity);
             col.find({ cart: { $elemMatch: { productId: productId } } }).then((result) => {
                 if (result.length > 0) {
                     col.update(
@@ -176,7 +174,12 @@ router.put('/addtocart', function (req, res) {
                         { $inc: { totalnum: quantity, 'cart.$.quantity': quantity } },
                         false,
                         true
-                    )
+                    ).then(result => {
+                        var response = {
+                            totalnum: docs[0].totalnum + quantity
+                        }
+                        res.json(response);
+                    })
                 }
                 else {
                     col.update(
@@ -187,14 +190,16 @@ router.put('/addtocart', function (req, res) {
                         },
                         false,
                         true
-                    )
+                    ).then(result => {
+                        var response = {
+                            totalnum: docs[0].totalnum + quantity
+                        }
+                        res.json(response);
+                    })
                 }
 
             })
-            var response = {
-                totalnum: docs[0].totalnum + quantity
-            }
-            res.json(response);
+
         }
         else {
             var response = {
@@ -236,7 +241,6 @@ router.get('/loadcart', function (req, res) {
                             productImage: productImage
                         }
                         cart.push(product);
-                        console.log(docs[0].cart.length)
                         if (i >= docs[0].cart.length - 1) {
                             var response = {
                                 cart: cart
@@ -266,25 +270,28 @@ router.put('/updatecart', function (req, res) {
     var quantity = parseInt(req.body.quantity);
     var userId = req.cookies.userId;
 
-    // col.update(
-    //     { _id: monk.id(userId), 'cart.productId': productId },
-    //     { $inc: { totalnum: quantity, 'cart.$.quantity': quantity } },
-    //     false,
-    //     true
-    // );
-
     col.find({ _id: monk.id(userId) }).then((docs) => {
         if (docs.length > 0) {
-            col.update(
-                { _id: monk.id(userId), 'cart.productId': productId },
-                { $inc: { totalnum: quantity, 'cart.$.quantity': quantity } },
-                false,
-                true
-            )
-            var response = {
-                totalnum: docs[0].totalnum + quantity
+            var diff = 0;
+            for (let i = 0; i < docs[0].cart.length; i++) {
+                if (docs[0].cart[i].productId === productId) {
+                    diff = quantity - docs[0].cart[i].quantity;
+                    col.update(
+                        { _id: monk.id(userId), 'cart.productId': productId },
+                        { $inc: { totalnum: diff, 'cart.$.quantity': diff } },
+                        false,
+                        true
+                    ).then(result => {
+                        var response = {
+                            totalnum: docs[0].totalnum + diff
+                        }
+
+                        res.json(response);
+                    })
+                }
             }
-            res.json(response);
+
+
         }
         else {
             var response = {
@@ -297,45 +304,37 @@ router.put('/updatecart', function (req, res) {
 
 })
 
-router.delete('/deletefromcart/:productid', function (req, res) {
+router.delete('/deletefromcart/:productId', function (req, res) {
     var db = req.db;
     var col = db.get('userCollection');
 
     var productId = req.params.productId;
     var userId = req.cookies.userId;
 
+
     col.find({ _id: monk.id(userId) }).then((docs) => {
         if (docs.length > 0) {
-            for (let i; i < docs[0].cart.length; i++) {
+            for (let i = 0; i < docs[0].cart.length; i++) {
                 if (docs[0].cart[i].productId === productId) {
                     col.update(
                         { _id: monk.id(userId) },
                         {
-                            $pull: { cart: { productId: productId, quantity: docs[0].cart[i].quantity } },
-                            $inc: { totalnum: 0 - quantity }
+                            $pull: { cart: { productId: productId } },
+                            $inc: { totalnum: 0 - docs[0].cart[i].quantity }
 
                         },
                         false,
                         true
-                    ).then((err, result) => {
-                        if (err !== null) {
-                            res.json({
-                                message: err.message,
-                                error: err
-                            });
+                    ).then(result => {
+                        var response = {
+                            totalnum: docs[0].totalnum - docs[0].cart[i].quantity
                         }
+
+                        res.json(response);
                     });
-
-                    var response = {
-                        totalnum: docs[0].totalnum
-                    }
-
-                    res.json(response);
                 }
             }
-
         }
-
     }).catch((err) => {
         res.send(err);
     })

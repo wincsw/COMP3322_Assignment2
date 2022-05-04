@@ -9,27 +9,23 @@ var cookieParser = require('cookie-parser');
 var monk = require('monk');
 var db = monk('localhost:27017/assignment2');
 
-// var indexRouter = require('./routes/index');
+// product wouter
 var products_router = require('./routes/products');
 
+// cros option
 var corsOptions = {
     "origin": "http://localhost:3000",
     "credentials": true
 }
 
-
 var app = express();
 app.use(cors(corsOptions));
 app.use(cookieParser());
 
-// // view engine setup
-// app.set('views', path.join(__dirname, 'views'));
-// app.set('view engine', 'pug');
 
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-// app.use(express.static(path.join(__dirname, 'public')));
 
 
 // Make our db accessible to routers 
@@ -39,7 +35,6 @@ app.use(function (req, res, next) {
 });
 
 app.options('*', cors(corsOptions));
-// app.use('/', indexRouter);
 app.use('/', products_router);
 
 // for requests not matching the above routes, create 404 error and forward to error handler

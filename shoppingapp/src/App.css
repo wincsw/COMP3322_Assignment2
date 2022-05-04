@@ -1,38 +1,245 @@
-.App {
-  text-align: center;
+/* Reset Style */
+
+:root {
+    --div_width: 90%;
+    --color1: #D4A373;
+    --color2: #FAEDCD;
+    --color3: #FEFAE0;
+    --color4: #E9EDC9;
+    --color5: #9aa575;
+    --larger_fontsize: 25px;
+
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+body {
+    min-width: 910px;
+    text-align: center;
+    font: 20px "Lucida Grande", Helvetica, Arial, sans-serif;
+    background-color: var(--color1);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+
+a {
+    color: #000000;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+a:hover {
+    color: var(--color5);
 }
 
-.App-link {
-  color: #61dafb;
+button {
+    font-size: 20px;
+    color: var(--color3);
+    background-color: var(--color5);
+    padding: 10px 20px;
+    border: 2px solid var(--color5);
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+button:hover {
+    background-color: var(--color3);
+    color: var(--color5);
+
+}
+
+input {
+    font-size: 20px;
+}
+
+select {
+    font-size: 20px;
+}
+
+img {
+    max-width: 100px;
+    max-height: 100px;
+}
+
+/* Header */
+.header {
+    padding: 20px 0;
+    float: center;
+    width: var(--div_width);
+    margin: auto;
+    background-color: var(--color2);
+}
+
+.header * {
+    background-color: var(--color2);
+    text-align: center;
+}
+
+/* Navbar */
+nav {
+    display: inline-flex;
+    justify-content: center;
+    padding: 20px 0;
+    width: var(--div_width);
+    margin: auto;
+    background-color: var(--color2);
+}
+
+nav * {
+    display: inline-flex;
+    float: right;
+    margin: auto;
+    padding: 0 10px;
+}
+
+.category button {
+    margin: 0 5px;
+}
+
+.searchbox input {
+    width: 100%;
+}
+
+/* Display Product*/
+.display {
+    display: grid;
+    float: center;
+    align-items: center;
+    margin: auto;
+    grid-template-columns: auto auto auto auto;
+    background-color: var(--color2);
+    padding: 10px 0;
+    width: var(--div_width);
+}
+
+/* Product Detail */
+
+.product {
+    display: block;
+    float: center;
+    margin: auto;
+    background-color: var(--color2);
+    padding: 10px 0;
+    width: var(--div_width);
+}
+
+.product img {
+    max-width: 300px;
+    max-height: 100%;
+
+    margin-left: 50px;
+}
+
+.detail {
+    display: inline-flex;
+    justify-content: center;
+}
+
+.info {
+    display: block;
+    text-align: left;
+    margin-left: 50px;
+    margin-right: 100px;
+    width: 350px;
+}
+
+.addtocartbox {
+    display: block;
+    border-style: solid;
+    border-radius: 25px;
+    margin-left: 50px;
+}
+
+.addtocartbox * {
+    margin: 20px;
+}
+
+.back {
+    text-align: center;
+    display: block;
+    margin-top: 100px;
+    margin-bottom: 50px;
+}
+
+/* Sigin */
+.signin {
+    display: block;
+    float: center;
+    margin: auto;
+    background-color: var(--color2);
+    padding: 10px 0;
+    width: var(--div_width);
+}
+
+.signin div * {
+    display: inline;
+    margin: 10px;
+}
+
+.signin button {
+    margin-top: 50px;
+    margin-bottom: 20px;
+}
+
+/* Add to Cart*/
+.addtocart {
+    display: block;
+    float: center;
+    margin: auto;
+    background-color: var(--color2);
+    padding: 10px 0;
+    width: var(--div_width);
+}
+
+.addtocart div * {
+    display: inline;
+    align-items: center;
+    justify-items: center;
+}
+
+.addtocart img {
+    max-width: 300px;
+    max-height: 300px;
+    margin-right: 100px;
+}
+
+.addtocart h2 {
+    top: 0;
+}
+
+/* Cart */
+
+.cart {
+    float: center;
+    margin: auto;
+    background-color: var(--color2);
+    padding: 10px 0;
+    width: var(--div_width);
+}
+
+.cart table {
+    width: 80%;
+    margin-left: 15%;
+}
+
+.cart table * {
+    text-align: left;
+}
+
+/* Check Out */
+.checkout {
+    display: block;
+    float: center;
+    margin: auto;
+    background-color: var(--color2);
+    padding: 10px 0;
+    width: var(--div_width);
+}
+
+@media only screen and (max-width: 1350px) {
+    :root {
+        --div_width: 100%;
+    }
+}
+
+@media only screen and (max-width: 1220px) {
+    .signinout * {
+        display: block;
+    }
 }
