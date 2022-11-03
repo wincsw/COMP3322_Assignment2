@@ -37,29 +37,29 @@ npm start
 ## Showcase
 - Initial Page
 ```md
-    ![alt text](assets/images/initial.png)
+    ![Alt text](/assets/images/initial.png)
 ```
 - Search/Filter Products
 ```md
-    ![Alt text](assets/images/search.png)
+    ![Alt text](/assets/images/search.png)
 ```
 - Product Detail
 ```md
-    ![Alt text](assets/images/detail.png)
+    ![Alt text](/assets/images/detail.png)
 ```
 - Sign In
 ```md
-    ![Alt text](assets/images/login.png)
+    ![Alt text](/assets/images/login.png)
 ```
 - Add to Cart
 ```md
-    ![Alt text](assets/images/addtocart.png)
+    ![Alt text](/assets/images/addtocart.png)
 ```
 - Shopping Cart
 ```md
-    ![Alt text](assets/images/cart.png)
+    ![Alt text](/assets/images/cart.png)
 ```
 - Check Out
 ```md
-    ![Alt text](assets/images/checkout.png)
+    ![Alt text](/assets/images/checkout.png)
 ```
