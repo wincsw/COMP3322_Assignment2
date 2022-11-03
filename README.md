@@ -41,25 +41,25 @@ npm start
 ```
 - Search/Filter Products
 ```md
-    ![alt text](assets/images/search.png)
+    ![Alt text](assets/images/search.png)
 ```
 - Product Detail
 ```md
-    ![alt text](assets/images/detail.png)
+    ![Alt text](assets/images/detail.png)
 ```
 - Sign In
 ```md
-    ![alt text](assets/images/login.png)
+    ![Alt text](assets/images/login.png)
 ```
 - Add to Cart
 ```md
-    ![alt text](assets/images/addtocart.png)
+    ![Alt text](assets/images/addtocart.png)
 ```
 - Shopping Cart
 ```md
-    ![alt text](assets/images/cart.png)
+    ![Alt text](assets/images/cart.png)
 ```
 - Check Out
 ```md
-    ![alt text](assets/images/checkout.png)
+    ![Alt text](assets/images/checkout.png)
 ```
