@@ -36,30 +36,16 @@ npm start
 
 ## Showcase
 - Initial Page
-```md
-    ![Alt text](/assets/images/initial.png)
-```
+    ![Initial Page](https://github.com/wincsw/COMP3322_Assignment2/blob/master/assets/images/initial.png)
 - Search/Filter Products
-```md
-    ![Alt text](/assets/images/search.png)
-```
+    ![Alt text](https://github.com/wincsw/COMP3322_Assignment2/blob/master/assets/images/search.png)
 - Product Detail
-```md
-    ![Alt text](/assets/images/detail.png)
-```
+    ![Alt text](https://github.com/wincsw/COMP3322_Assignment2/blob/master//assets/images/detail.png)
 - Sign In
-```md
-    ![Alt text](/assets/images/login.png)
-```
+    ![alt text](https://github.com/wincsw/COMP3322_Assignment2/blob/master//assets/images/login.png)
 - Add to Cart
-```md
-    ![Alt text](/assets/images/addtocart.png)
-```
+    ![Alt text](https://github.com/wincsw/COMP3322_Assignment2/blob/master//assets/images/addtocart.png)
 - Shopping Cart
-```md
-    ![Alt text](/assets/images/cart.png)
-```
+    ![Alt text](https://github.com/wincsw/COMP3322_Assignment2/blob/master//assets/images/cart.png)
 - Check Out
-```md
-    ![Alt text](/assets/images/checkout.png)
-```
+    ![Alt text](https://github.com/wincsw/COMP3322_Assignment2/blob/master//assets/images/checkout.png)
